@@ -14,11 +14,11 @@ import java.util.List;
 @ShellComponent
 @RequiredArgsConstructor
 @Component
-class DatabaseStateReportCommand {
+class DatabaseInfoCommand {
     private final Flyway flyway;
 
-    @ShellMethod(value = "Prints current state of the database schema", key = "db-info")
-    public String printDbInfo() {
+    @ShellMethod(value = "Print current state of the database schema")
+    public String dbInfo() {
         MigrationInfo currentMigrationInfo = flyway.info().current();
         return String.join("\n",
                 List.of(

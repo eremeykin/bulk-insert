@@ -1,0 +1,9 @@
+{
+  "properties": [
+    {
+      "name": "bulkinsert.input.generator.chunk-size",
+      "type": "java.lang.String",
+      "description": "Chunk size for the input generation job."
+    }
+  ]
+}

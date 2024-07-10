@@ -24,15 +24,11 @@ repositories {
 extra["springShellVersion"] = "3.3.1"
 
 dependencies {
-//    implementation("org.springframework.boot:spring-boot-starter-batch")
+    implementation("org.springframework.boot:spring-boot-starter-batch")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter")
     implementation("org.springframework.shell:spring-shell-starter")
 
-//    implementation ("org.jline:jline:3.25.1")
-
-
-//    implementation("org.springframework.shell:spring-shell-dependencies")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("me.paulschwarz:spring-dotenv:4.0.0")
