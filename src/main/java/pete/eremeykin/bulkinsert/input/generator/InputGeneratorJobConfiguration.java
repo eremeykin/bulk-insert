@@ -1,22 +1,26 @@
 package pete.eremeykin.bulkinsert.input.generator;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
-import org.springframework.boot.autoconfigure.batch.BatchProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
+import pete.eremeykin.bulkinsert.job.parameters.converter.JacksonJobParametersConverter;
+import pete.eremeykin.bulkinsert.job.parameters.converter.JobParametersConverter;
+import pete.eremeykin.bulkinsert.job.status.StatusReportingChunkListener;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Map;
 
 @Configuration
 @RequiredArgsConstructor
@@ -28,6 +32,8 @@ class InputGeneratorJobConfiguration {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager platformTransactionManager;
     private final InputGeneratorProperties properties;
+    private final ItemReader<InputFileItem> itemReader;
+    private final ItemWriter<InputFileItem> itemWriter;
 
     @Bean
     Job inputFileGenerationJob() {
@@ -40,31 +46,24 @@ class InputGeneratorJobConfiguration {
     Step generateInputFile() {
         return new StepBuilder(GENERATE_INPUT_FILE_STEP_NAME, jobRepository)
                 .<InputFileItem, InputFileItem>chunk(properties.getChunkSize(), platformTransactionManager)
-                .reader(generatingRandomItemReader())
-                .writer(dummyItemWriter())
+                .reader(itemReader)
+                .writer(itemWriter)
+                .listener(new StatusReportingChunkListener())
                 .build();
     }
 
     @Bean
-    ItemReader<InputFileItem> generatingRandomItemReader() {
-        AtomicInteger itemsProduced = new AtomicInteger();
-        return () -> {
-            if (itemsProduced.incrementAndGet() > 10) return null;
-            return new InputFileItem(
-                    "Test name",
-                    "Test artist",
-                    "Test album name"
-            );
-        };
+    JobParametersConverter<InputGeneratorJobParameters> jobParametersConverter() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return new JacksonJobParametersConverter<>(objectMapper, InputGeneratorJobParameters.class);
     }
 
+    @JobScope
     @Bean
-    ItemWriter<InputFileItem> dummyItemWriter() {
-        return chunk -> {
-            for (InputFileItem item : chunk.getItems()) {
-                System.out.println(item);
-            }
-        };
+    InputGeneratorJobParameters inputGeneratorJobParameters(
+            @Value("#{jobParameters}") Map<String, Object> jobParameters,
+            JobParametersConverter<InputGeneratorJobParameters> jobParametersConverter) {
+        return jobParametersConverter.objectFromMap(jobParameters);
     }
 }
 
