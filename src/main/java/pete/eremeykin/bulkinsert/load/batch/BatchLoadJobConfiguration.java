@@ -1,4 +1,4 @@
-package pete.eremeykin.bulkinsert.input.generator;
+package pete.eremeykin.bulkinsert.load.batch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.batch.core.Job;
@@ -11,7 +11,6 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -24,69 +23,69 @@ import pete.eremeykin.bulkinsert.job.util.parameters.converter.JobParametersConv
 import java.util.Map;
 
 @Configuration
-@EnableConfigurationProperties(InputGeneratorProperties.class)
-class InputGeneratorJobConfiguration {
-    private final static String JOB_NAME = "inputFileGenerationJob";
-    private final static String GENERATE_INPUT_FILE_STEP_NAME = "generateInputFile";
-
+class BatchLoadJobConfiguration {
+    private static final String JOB_NAME = "batchLoadJob";
+    private static final String LOAD_SOURCE_FILE_STEP_NAME = "loadSourceFile";
     private final JobRepository jobRepository;
     private final PlatformTransactionManager platformTransactionManager;
-    private final InputGeneratorProperties properties;
+    @BatchLoadQualifier
     private final ItemReader<InputFileItem> itemReader;
+    @BatchLoadQualifier
     private final ItemWriter<InputFileItem> itemWriter;
+    private final BatchLoadJobParameters jobParameters;
 
-    InputGeneratorJobConfiguration(JobRepository jobRepository,
-                                   PlatformTransactionManager platformTransactionManager,
-                                   InputGeneratorProperties properties,
-                                   @InputGeneratorQualifier
-                                   ItemReader<InputFileItem> itemReader,
-                                   @InputGeneratorQualifier
-                                   ItemWriter<InputFileItem> itemWriter) {
+    BatchLoadJobConfiguration(JobRepository jobRepository,
+                              PlatformTransactionManager platformTransactionManager,
+                              @BatchLoadQualifier
+                              ItemReader<InputFileItem> itemReader,
+                              @BatchLoadQualifier
+                              ItemWriter<InputFileItem> itemWriter,
+                              BatchLoadJobParameters jobParameters) {
         this.jobRepository = jobRepository;
         this.platformTransactionManager = platformTransactionManager;
-        this.properties = properties;
         this.itemReader = itemReader;
         this.itemWriter = itemWriter;
+        this.jobParameters = jobParameters;
     }
 
     @Bean
-    Job inputFileGenerationJob() {
+    Job bathLoadJob() {
         return new JobBuilder(JOB_NAME, jobRepository)
-                .start(generateInputFile())
+                .start(loadStep())
                 .build();
     }
 
+    @JobScope
     @Bean
-    Step generateInputFile() {
-        return new StepBuilder(GENERATE_INPUT_FILE_STEP_NAME, jobRepository)
-                .<InputFileItem, InputFileItem>chunk(properties.getChunkSize(), platformTransactionManager)
+    Step loadStep() {
+        return new StepBuilder(LOAD_SOURCE_FILE_STEP_NAME, jobRepository)
+                .<InputFileItem, InputFileItem>chunk(jobParameters.getChunkSize(), platformTransactionManager)
                 .reader(itemReader)
                 .writer(itemWriter)
                 .listener(new StatusReportingChunkListener())
                 .build();
     }
 
-    @Bean(name = "inputFileGeneratorJobParametersConverter")
-    JobParametersConverter<InputGeneratorJobParameters> jobParametersConverter() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return new JacksonJobParametersConverter<>(objectMapper, InputGeneratorJobParameters.class);
-    }
-
-    @Bean(name = "inputFileGeneratorJobLaunchingService")
-    JobLaunchingService<InputGeneratorJobParameters> jobLaunchingService(JobLauncher jobLauncher) {
+    @Bean(name = "batchLoadJobLaunchingService")
+    JobLaunchingService<BatchLoadJobParameters> jobLaunchingService(JobLauncher jobLauncher) {
         return new JobLaunchingService<>(
-                inputFileGenerationJob(),
+                bathLoadJob(),
                 jobLauncher,
                 jobParametersConverter()
         );
     }
 
+    @Bean(name = "batchLoadJobParametersConverter")
+    JobParametersConverter<BatchLoadJobParameters> jobParametersConverter() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return new JacksonJobParametersConverter<>(objectMapper, BatchLoadJobParameters.class);
+    }
+
     @JobScope
-    @Bean(name = "inputFileGeneratorJobParameters")
-    InputGeneratorJobParameters jobParameters(
+    @Bean(name = "batchLoadJobParameters")
+    BatchLoadJobParameters jobParameters(
             @Value("#{jobParameters}") Map<String, Object> jobParameters,
-            JobParametersConverter<InputGeneratorJobParameters> jobParametersConverter) {
+            JobParametersConverter<BatchLoadJobParameters> jobParametersConverter) {
         return jobParametersConverter.objectFromMap(jobParameters);
     }
 }
-

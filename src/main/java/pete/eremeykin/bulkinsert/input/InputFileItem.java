@@ -1,13 +1,11 @@
 package pete.eremeykin.bulkinsert.input;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 @Getter
 @Setter
 @ToString
+@NoArgsConstructor
 @AllArgsConstructor
 public class InputFileItem {
     private String name;

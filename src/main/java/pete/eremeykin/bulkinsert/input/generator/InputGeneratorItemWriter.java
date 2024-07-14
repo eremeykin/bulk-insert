@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
 
 @JobScope
+@InputGeneratorQualifier
 @Component
 class InputGeneratorItemWriter implements ItemWriter<InputFileItem>, InitializingBean, ItemStream {
     @Delegate(types = {ItemWriter.class, InitializingBean.class, ItemStream.class})

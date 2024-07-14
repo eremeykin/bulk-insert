@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @JobScope
 @Component
+@InputGeneratorQualifier
 @RequiredArgsConstructor
 class InputGeneratorItemReader implements ItemReader<InputFileItem> {
     private final InputGeneratorJobParameters jobParameters;

@@ -1,4 +1,4 @@
-package pete.eremeykin.bulkinsert.job.parameters.converter;
+package pete.eremeykin.bulkinsert.job.util.parameters.converter;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

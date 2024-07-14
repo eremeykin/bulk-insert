@@ -1,4 +1,4 @@
-package pete.eremeykin.bulkinsert.job.status;
+package pete.eremeykin.bulkinsert.job.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.ChunkListener;
