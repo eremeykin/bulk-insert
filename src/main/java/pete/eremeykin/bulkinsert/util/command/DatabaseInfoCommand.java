@@ -1,4 +1,4 @@
-package pete.eremeykin.bulkinsert.diagnostics;
+package pete.eremeykin.bulkinsert.util.command;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

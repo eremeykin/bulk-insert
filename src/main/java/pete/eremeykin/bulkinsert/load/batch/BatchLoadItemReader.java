@@ -27,7 +27,7 @@ class BatchLoadItemReader implements ItemReader<InputFileItem>,
         itemReader.setResource(new FileSystemResource(jobParameters.getSourcefile()));
         DefaultLineMapper<InputFileItem> lineMapper = new DefaultLineMapper<>();
         DelimitedLineTokenizer tokenizer = new DelimitedLineTokenizer(",");
-        tokenizer.setNames(new String[]{"name", "artist", "albumName"});
+        tokenizer.setNames("name", "artist", "albumName");
         lineMapper.setLineTokenizer(tokenizer);
         BeanWrapperFieldSetMapper<InputFileItem> objectBeanWrapperFieldSetMapper = new BeanWrapperFieldSetMapper<>();
         objectBeanWrapperFieldSetMapper.setTargetType(InputFileItem.class);

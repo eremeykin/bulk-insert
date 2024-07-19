@@ -20,6 +20,7 @@ class BatchLoadCommand {
             key = {"batch-load", "bl"})
     String batchLoad(
             @ShellOption(help = "Path to the source data file") File sourceFile,
+            @ShellOption(help = "Enable reWriteBatchedInserts=true parameter") boolean useAdvancedDataSource,
             @ShellOption(help = "Chunk size", defaultValue = "1500") int chunkSize
     ) throws Exception {
         if (!Files.exists(sourceFile.toPath())) {
@@ -28,7 +29,8 @@ class BatchLoadCommand {
         BatchLoadJobParameters jobParameters = new BatchLoadJobParameters(
                 UUID.randomUUID(),
                 sourceFile,
-                chunkSize
+                chunkSize,
+                useAdvancedDataSource
         );
         return jobLaunchingService.launchJob(jobParameters);
     }
