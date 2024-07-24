@@ -1,5 +1,6 @@
 plugins {
     java
+    id("idea")
     id("org.springframework.boot") version "3.3.1"
     id("io.spring.dependency-management") version "1.1.5"
 }
@@ -19,6 +20,13 @@ configurations {
 
 repositories {
     mavenCentral()
+}
+
+idea {
+    module {
+        isDownloadJavadoc = true
+        isDownloadSources = true
+    }
 }
 
 extra["springShellVersion"] = "3.3.1"

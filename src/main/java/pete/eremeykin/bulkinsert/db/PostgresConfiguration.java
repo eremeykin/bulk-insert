@@ -20,6 +20,7 @@ class PostgresConfiguration {
 
     @Primary
     @Bean
+    @ConfigurationProperties("spring.datasource.default.hikari")
     public DataSource defaultDataSource() {
         return defaultDataSourceProperties()
                 .initializeDataSourceBuilder()
@@ -35,6 +36,7 @@ class PostgresConfiguration {
 
     @Bean
     @AdvancedQualifier
+    @ConfigurationProperties("spring.datasource.advanced.hikari")
     public DataSource advancedDataSource() {
         return advancedDataSourceProperties()
                 .initializeDataSourceBuilder()

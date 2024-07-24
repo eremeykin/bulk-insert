@@ -4,15 +4,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobScope;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
 import pete.eremeykin.bulkinsert.job.util.JobLaunchingService;
@@ -40,6 +45,7 @@ class BatchLoadJobConfiguration {
                               ItemReader<InputFileItem> itemReader,
                               @BatchLoadQualifier
                               ItemWriter<InputFileItem> itemWriter,
+                              @Qualifier("batchLoadJobParameters")
                               BatchLoadJobParameters jobParameters) {
         this.jobRepository = jobRepository;
         this.platformTransactionManager = platformTransactionManager;
@@ -49,10 +55,16 @@ class BatchLoadJobConfiguration {
     }
 
     @Bean
-    Job bathLoadJob() {
+    Job batchLoadJob() {
         return new JobBuilder(JOB_NAME, jobRepository)
                 .start(loadStep())
                 .build();
+    }
+
+    @Bean
+    @ConfigurationProperties("bulkinsert.executor")
+    TaskExecutor taskExecutor() {
+        return new ThreadPoolTaskExecutor();
     }
 
     @JobScope
@@ -63,13 +75,14 @@ class BatchLoadJobConfiguration {
                 .reader(itemReader)
                 .writer(itemWriter)
                 .listener(new StatusReportingChunkListener())
+                .taskExecutor(taskExecutor())
                 .build();
     }
 
     @Bean(name = "batchLoadJobLaunchingService")
     JobLaunchingService<BatchLoadJobParameters> jobLaunchingService(JobLauncher jobLauncher) {
         return new JobLaunchingService<>(
-                bathLoadJob(),
+                batchLoadJob(),
                 jobLauncher,
                 jobParametersConverter()
         );
@@ -84,6 +97,14 @@ class BatchLoadJobConfiguration {
     @JobScope
     @Bean(name = "batchLoadJobParameters")
     BatchLoadJobParameters jobParameters(
+            @Value("#{jobParameters}") Map<String, Object> jobParameters,
+            JobParametersConverter<BatchLoadJobParameters> jobParametersConverter) {
+        return jobParametersConverter.objectFromMap(jobParameters);
+    }
+
+    @StepScope
+    @Bean(name = "batchLoadJobParametersAtSteScope")
+    BatchLoadJobParameters jobParametersAtStepScope(
             @Value("#{jobParameters}") Map<String, Object> jobParameters,
             JobParametersConverter<BatchLoadJobParameters> jobParametersConverter) {
         return jobParametersConverter.objectFromMap(jobParameters);
