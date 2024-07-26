@@ -14,13 +14,12 @@ import java.util.UUID;
 class BatchLoadJobParameters {
     private final UUID jobId;
     private final File sourcefile;
-    private final int chunkSize;
     private final boolean advancedDataSource;
 
     @Override
     public String toString() {
         String dataSource = "default";
         if (advancedDataSource) dataSource = "advanced";
-        return "job#%s, data source: %s, chunk size: %s, source: %s".formatted(jobId, dataSource, chunkSize, sourcefile);
+        return "job#%s, data source: %s, source: %s".formatted(jobId, dataSource, sourcefile);
     }
 }

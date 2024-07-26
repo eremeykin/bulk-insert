@@ -1,14 +1,12 @@
 package pete.eremeykin.bulkinsert.load.batch;
 
 import lombok.experimental.Delegate;
-import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import pete.eremeykin.bulkinsert.db.AdvancedQualifier;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
@@ -24,7 +22,6 @@ class BatchLoadItemWriter implements ItemWriter<InputFileItem>, InitializingBean
     private final JdbcBatchItemWriter<InputFileItem> itemWriter;
 
     public BatchLoadItemWriter(
-            @Qualifier("batchLoadJobParametersAtSteScope")
             BatchLoadJobParameters jobParameters,
             DataSource defaultDataSource,
             @AdvancedQualifier DataSource advancedDataSource

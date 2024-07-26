@@ -29,7 +29,6 @@ class BatchLoadCommand {
         BatchLoadJobParameters jobParameters = new BatchLoadJobParameters(
                 UUID.randomUUID(),
                 sourceFile,
-                chunkSize,
                 useAdvancedDataSource
         );
         return jobLaunchingService.launchJob(jobParameters);
