@@ -11,13 +11,16 @@ import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.stereotype.Component;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
 import pete.eremeykin.bulkinsert.util.schema.SchemaInfo;
 
+@Primary
 @StepScope
 @BatchLoadQualifier
-//@Component
+@Component
 class BatchLoadItemReader implements ItemReader<InputFileItem>, InitializingBean, ItemStreamReader<InputFileItem> {
     @Delegate(types = {ItemReader.class, InitializingBean.class, ItemStreamReader.class})
     private final FlatFileItemReader<InputFileItem> itemReader;
