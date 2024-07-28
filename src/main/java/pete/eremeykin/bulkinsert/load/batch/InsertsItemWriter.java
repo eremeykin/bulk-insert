@@ -15,13 +15,14 @@ import pete.eremeykin.bulkinsert.util.schema.SchemaInfo;
 import javax.sql.DataSource;
 
 @StepScope
-@BatchLoadQualifier
 @Component
-class BatchLoadItemWriter implements ItemWriter<InputFileItem>, InitializingBean {
+@BatchLoadQualifier
+@WriterType.InsertsWriterQualifier
+class InsertsItemWriter implements ItemWriter<InputFileItem>, InitializingBean {
     @Delegate(types = {JdbcBatchItemWriter.class, ItemWriter.class, InitializingBean.class})
     private final JdbcBatchItemWriter<InputFileItem> itemWriter;
 
-    public BatchLoadItemWriter(
+    public InsertsItemWriter(
             BatchLoadJobParameters jobParameters,
             DataSource defaultDataSource,
             @AdvancedQualifier DataSource advancedDataSource
@@ -37,9 +38,9 @@ class BatchLoadItemWriter implements ItemWriter<InputFileItem>, InitializingBean
                         SchemaInfo.TestTableColumn.ARTIST.getSqlName(),
                         SchemaInfo.TestTableColumn.ALBUM_NAME.getSqlName(),
                         // ID is generated
-                        SchemaInfo.TestTableColumn.NAME.getFieldName(),
-                        SchemaInfo.TestTableColumn.ARTIST.getFieldName(),
-                        SchemaInfo.TestTableColumn.ALBUM_NAME.getFieldName()
+                        SchemaInfo.TestTableColumn.NAME.getBeanFieldName(),
+                        SchemaInfo.TestTableColumn.ARTIST.getBeanFieldName(),
+                        SchemaInfo.TestTableColumn.ALBUM_NAME.getBeanFieldName()
                 )
         );
         if (jobParameters.isAdvancedDataSource()) {

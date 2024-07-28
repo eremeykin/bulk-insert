@@ -15,11 +15,12 @@ class BatchLoadJobParameters {
     private final UUID jobId;
     private final File sourcefile;
     private final boolean advancedDataSource;
+    private final WriterType writerType;
 
     @Override
     public String toString() {
         String dataSource = "default";
         if (advancedDataSource) dataSource = "advanced";
-        return "job#%s, data source: %s, source: %s".formatted(jobId, dataSource, sourcefile);
+        return "job#%s, %s, data source: %s, source: %s".formatted(jobId, writerType, dataSource, sourcefile);
     }
 }

@@ -1,51 +1,50 @@
 package pete.eremeykin.bulkinsert.load.batch;
 
-import lombok.RequiredArgsConstructor;
-import lombok.experimental.Delegate;
-import org.postgresql.copy.PGCopyOutputStream;
-import org.postgresql.jdbc.PgConnection;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.*;
-import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
-import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
-import org.springframework.batch.item.file.transform.LineAggregator;
-import org.springframework.context.annotation.Primary;
-import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Component;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
 
 import javax.sql.DataSource;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import static org.springframework.batch.item.support.AbstractFileItemWriter.DEFAULT_LINE_SEPARATOR;
+import static pete.eremeykin.bulkinsert.load.batch.WriterType.*;
 
 
 @StepScope
-@BatchLoadQualifier
-@Primary
 @Component
+@BatchLoadQualifier
+@CopyAsyncWriterQualifier
 class AsyncCopyItemWriter implements ItemWriter<InputFileItem>, ItemStream {
     private final BlockingQueue<QueueElement> queue;
-    private final Thread thread;
+    private final FutureTask<Void> backgroundTask;
+    private final AsyncTaskExecutor taskExecutor;
 
     private record QueueElement(Chunk<? extends InputFileItem> chunk) {
         private static final QueueElement POISONED = new QueueElement(null);
     }
 
-    public AsyncCopyItemWriter(DataSource defaultDataSource) {
-        DelimitedLineAggregator<InputFileItem> lineAggregator = new DelimitedLineAggregator<>();
-        BeanWrapperFieldExtractor<InputFileItem> fieldExtractor = new BeanWrapperFieldExtractor<>();
-        fieldExtractor.setNames(new String[]{"name", "artist", "albumName"});
-        lineAggregator.setFieldExtractor(fieldExtractor);
+    public AsyncCopyItemWriter(DataSource defaultDataSource,
+                               @WriterType.CopyAsyncWriterQualifier AsyncTaskExecutor writerTaskExecutor) {
         this.queue = new LinkedBlockingQueue<>();
-        this.thread = new BackgroundThread(defaultDataSource, queue, lineAggregator);
+        this.taskExecutor = writerTaskExecutor;
+        this.backgroundTask = new FutureTask<>(() -> {
+            try (var outputStream = new ItemPGOutputStream<>(defaultDataSource)) {
+                for (QueueElement element = null;
+                     element != QueueElement.POISONED;
+                     element = queue.poll(100, TimeUnit.MILLISECONDS)) {
+                    if (element == null) continue;
+                    for (InputFileItem item : element.chunk) {
+                        outputStream.write(item);
+                    }
+                }
+                return null;
+            }
+        });
     }
 
     @Override
@@ -55,68 +54,16 @@ class AsyncCopyItemWriter implements ItemWriter<InputFileItem>, ItemStream {
 
     @Override
     public void open(ExecutionContext executionContext) throws ItemStreamException {
-        thread.start();
+        taskExecutor.execute(backgroundTask);
     }
 
     @Override
     public void close() throws ItemStreamException {
         try {
             queue.add(QueueElement.POISONED);
-            thread.join();
+            backgroundTask.get();
         } catch (Exception e) {
-            throw new ItemStreamException("Unable to join executor thread", e);
+            throw new ItemStreamException("Unable to close " + this.getClass().getName(), e);
         }
-    }
-
-    @RequiredArgsConstructor
-    private static class BackgroundThread extends Thread {
-        private final DataSource dataSource;
-        private final BlockingQueue<QueueElement> queue;
-        private final LineAggregator<InputFileItem> lineAggregator;
-
-        @Override
-        public void run() {
-            try (Connection connection = new DataSourceUtilsConnection();
-                 PGCopyOutputStream outputStream = new PGCopyOutputStream(connection.unwrap(PgConnection.class),
-                         """
-                                 COPY songs (id, name, artist, album_name)
-                                 FROM STDIN
-                                 DELIMITER ','
-                                 CSV;
-                                 """)
-            ) {
-                while (true) {
-                    QueueElement element = queue.poll(100, TimeUnit.MILLISECONDS);
-                    if (element == null) continue;
-                    if (element == QueueElement.POISONED) return;
-                    for (InputFileItem item : element.chunk) {
-                        outputStream.write(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
-                        outputStream.write(",".getBytes(StandardCharsets.UTF_8));
-                        outputStream.write(this.lineAggregator.aggregate(item).getBytes(StandardCharsets.UTF_8));
-                        outputStream.write(DEFAULT_LINE_SEPARATOR.getBytes(StandardCharsets.UTF_8));
-                    }
-                }
-            } catch (IOException | InterruptedException | SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        private class DataSourceUtilsConnection extends ConnectionWrapper {
-
-            public DataSourceUtilsConnection() {
-                super(DataSourceUtils.getConnection(dataSource));
-            }
-
-            @Override
-            public void close() {
-                DataSourceUtils.releaseConnection(delegate, dataSource);
-            }
-        }
-    }
-
-    @RequiredArgsConstructor
-    static class ConnectionWrapper implements Connection {
-        @Delegate
-        final Connection delegate;
     }
 }

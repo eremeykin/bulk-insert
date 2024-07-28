@@ -29,6 +29,6 @@ class OneItemItemReader implements ItemReader<InputFileItem>, ItemStreamReader<I
 
     @Override
     public void open(ExecutionContext executionContext) throws ItemStreamException {
-        max = executionContext.getInt(LineCountingPartitioner.MAX_LINE_COUNT_KEY);
+        max = LineCountingPartitioner.getMaxLineCount(executionContext);
     }
 }

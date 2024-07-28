@@ -11,9 +11,9 @@ import static java.util.Collections.emptyMap;
 
 @RequiredArgsConstructor
 class LineCountingPartitioner implements Partitioner {
-    public static final String LINES_TO_SKIP_KEY = "linesToSkip";
-    public static final String MAX_LINE_COUNT_KEY = "maxLineCount";
-    public static final String PARTITION_PREFIX = "partition-";
+    private static final String LINES_TO_SKIP_KEY = "linesToSkip";
+    private static final String MAX_LINE_COUNT_KEY = "maxLineCount";
+    private static final String PARTITION_PREFIX = "partition-";
 
     private final LineCountingService lineCountingService;
 
@@ -38,4 +38,14 @@ class LineCountingPartitioner implements Partitioner {
         }
         return result;
     }
+
+
+    public static int getLinesToSkip(ExecutionContext executionContext) {
+        return executionContext.getInt(LINES_TO_SKIP_KEY);
+    }
+
+    public static int getMaxLineCount(ExecutionContext executionContext) {
+        return executionContext.getInt(MAX_LINE_COUNT_KEY);
+    }
+
 }

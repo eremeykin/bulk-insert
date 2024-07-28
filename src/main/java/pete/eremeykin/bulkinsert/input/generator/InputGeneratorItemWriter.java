@@ -11,6 +11,7 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
+import pete.eremeykin.bulkinsert.util.schema.SchemaInfo;
 
 @JobScope
 @InputGeneratorQualifier
@@ -24,7 +25,7 @@ class InputGeneratorItemWriter implements ItemWriter<InputFileItem>, Initializin
         itemWriter.setResource(new FileSystemResource(jobParameters.getOutputFile()));
         DelimitedLineAggregator<InputFileItem> lineAggregator = new DelimitedLineAggregator<>();
         BeanWrapperFieldExtractor<InputFileItem> fieldExtractor = new BeanWrapperFieldExtractor<>();
-        fieldExtractor.setNames(new String[]{"name", "artist", "albumName"});
+        fieldExtractor.setNames(SchemaInfo.TestTableColumn.getBeanFieldNames());
         lineAggregator.setFieldExtractor(fieldExtractor);
         itemWriter.setLineAggregator(lineAggregator);
         itemWriter.setAppendAllowed(false);

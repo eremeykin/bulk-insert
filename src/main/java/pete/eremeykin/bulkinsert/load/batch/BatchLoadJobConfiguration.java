@@ -17,6 +17,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
@@ -52,6 +53,17 @@ class BatchLoadJobConfiguration {
     }
 
     @Bean
+    @WriterType.CopyAsyncWriterQualifier
+    AsyncTaskExecutor writerTaskExecutor() {
+        ThreadPoolTaskExecutor partitionedStepExecutor = taskExecutor();
+        ThreadPoolTaskExecutor writerExecutor = new ThreadPoolTaskExecutor();
+        writerExecutor.setCorePoolSize(partitionedStepExecutor.getCorePoolSize());
+        writerExecutor.setMaxPoolSize(partitionedStepExecutor.getMaxPoolSize());
+        writerExecutor.setThreadNamePrefix("WriterExec-");
+        return writerExecutor;
+    }
+
+    @Bean
     Step loadStepManager(Step loadStep) {
         ThreadPoolTaskExecutor taskExecutor = taskExecutor();
         return new StepBuilder(LOAD_SOURCE_FILE_STEP_NAME + MANAGER_SUFFIX, jobRepository)
@@ -65,14 +77,32 @@ class BatchLoadJobConfiguration {
     @Bean
     Step loadStep(
             @BatchLoadQualifier ItemReader<InputFileItem> itemReader,
-            @BatchLoadQualifier ItemWriter<InputFileItem> itemWriter,
-            BatchLoadProperties batchLoadProperties
+            BatchLoadProperties batchLoadProperties,
+            ItemWriter<InputFileItem> itemWriter
     ) {
         return new StepBuilder(LOAD_SOURCE_FILE_STEP_NAME, jobRepository)
                 .<InputFileItem, InputFileItem>chunk(batchLoadProperties.getChunkSize(), platformTransactionManager)
                 .reader(itemReader)
                 .writer(itemWriter)
                 .build();
+    }
+
+    @StepScope
+    @Bean
+    ItemStreamWriter<InputFileItem> itemWriter(
+            @WriterType.CopyAsyncWriterQualifier ItemWriter<InputFileItem> copyAsyncWriter,
+            @WriterType.CopySyncWriterQualifier ItemWriter<InputFileItem> copySyncWriter,
+            @WriterType.InsertsWriterQualifier ItemWriter<InputFileItem> insertsItemWriter,
+            @Value("#{jobParameters['writerType']}") WriterType writerType
+    ) {
+        ItemWriter<InputFileItem> delegate;
+        switch (writerType) {
+            case COPY_ASYNC -> delegate = copyAsyncWriter;
+            case COPY_SYNC -> delegate = copySyncWriter;
+            case INSERTS -> delegate = insertsItemWriter;
+            default -> throw new IllegalStateException("Unknown writer type: " + writerType);
+        }
+        return new ItemStreamWriter.DelegateItemStreamWriter<>(delegate);
     }
 
     @Bean

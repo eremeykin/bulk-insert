@@ -12,8 +12,8 @@ import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.stereotype.Component;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
+import pete.eremeykin.bulkinsert.util.schema.SchemaInfo;
 
 @StepScope
 @BatchLoadQualifier
@@ -27,7 +27,7 @@ class BatchLoadItemReader implements ItemReader<InputFileItem>, InitializingBean
         flatFileItemReader.setResource(new FileSystemResource(jobParameters.getSourcefile()));
         DefaultLineMapper<InputFileItem> lineMapper = new DefaultLineMapper<>();
         DelimitedLineTokenizer tokenizer = new DelimitedLineTokenizer(",");
-        tokenizer.setNames("name", "artist", "albumName");
+        tokenizer.setNames(SchemaInfo.TestTableColumn.getBeanFieldNames());
         lineMapper.setLineTokenizer(tokenizer);
         BeanWrapperFieldSetMapper<InputFileItem> objectBeanWrapperFieldSetMapper = new BeanWrapperFieldSetMapper<>();
         objectBeanWrapperFieldSetMapper.setTargetType(InputFileItem.class);
@@ -45,7 +45,7 @@ class BatchLoadItemReader implements ItemReader<InputFileItem>, InitializingBean
     @Override
     public void open(ExecutionContext executionContext) throws ItemStreamException {
         itemReader.open(executionContext);
-        itemReader.setMaxItemCount(executionContext.getInt(LineCountingPartitioner.MAX_LINE_COUNT_KEY));
-        itemReader.setLinesToSkip(executionContext.getInt(LineCountingPartitioner.LINES_TO_SKIP_KEY));
+        itemReader.setMaxItemCount(LineCountingPartitioner.getMaxLineCount(executionContext));
+        itemReader.setLinesToSkip(LineCountingPartitioner.getLinesToSkip(executionContext));
     }
 }

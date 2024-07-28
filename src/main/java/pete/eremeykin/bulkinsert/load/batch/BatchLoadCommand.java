@@ -20,6 +20,7 @@ class BatchLoadCommand {
             key = {"batch-load", "bl"})
     String batchLoad(
             @ShellOption(help = "Path to the source data file") File sourceFile,
+            @ShellOption(help = "Writer type", defaultValue = "COPY_SYNC") WriterType writerType,
             @ShellOption(help = "Enable reWriteBatchedInserts=true parameter") boolean useAdvancedDataSource,
             @ShellOption(help = "Chunk size", defaultValue = "1500") int chunkSize
     ) throws Exception {
@@ -29,7 +30,8 @@ class BatchLoadCommand {
         BatchLoadJobParameters jobParameters = new BatchLoadJobParameters(
                 UUID.randomUUID(),
                 sourceFile,
-                useAdvancedDataSource
+                useAdvancedDataSource,
+                writerType
         );
         return jobLaunchingService.launchJob(jobParameters);
     }
