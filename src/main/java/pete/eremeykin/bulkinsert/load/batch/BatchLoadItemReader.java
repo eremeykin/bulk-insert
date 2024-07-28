@@ -17,7 +17,7 @@ import pete.eremeykin.bulkinsert.input.InputFileItem;
 
 @StepScope
 @BatchLoadQualifier
-@Component
+//@Component
 class BatchLoadItemReader implements ItemReader<InputFileItem>, InitializingBean, ItemStreamReader<InputFileItem> {
     @Delegate(types = {ItemReader.class, InitializingBean.class, ItemStreamReader.class})
     private final FlatFileItemReader<InputFileItem> itemReader;

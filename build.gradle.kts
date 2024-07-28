@@ -43,8 +43,8 @@ dependencies {
     implementation("me.paulschwarz:spring-dotenv:4.0.0")
 
     compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    runtimeOnly("org.postgresql:postgresql")
+    // implementation required to access CopyManager
+    implementation("org.postgresql:postgresql")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -65,7 +65,3 @@ project.the<SourceSetContainer>()["main"].resources {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
-
-//tasks.bootBuildImage {
-//    builder.set("paketobuildpacks/builder-jammy-base:latest")
-//}
