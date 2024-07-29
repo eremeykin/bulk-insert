@@ -9,7 +9,14 @@ import java.util.Arrays;
 @UtilityClass
 public class SchemaInfo {
 
-    public static String TEST_TABLE_NAME = "songs";
+    @Getter
+    @RequiredArgsConstructor
+    public enum TestTable {
+        NO_PK("songs"),
+        PK("songs_pk"),
+        ;
+        private final String tableName;
+    }
 
     @Getter
     @RequiredArgsConstructor

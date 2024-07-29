@@ -18,7 +18,7 @@ import javax.sql.DataSource;
 @Component
 @BatchLoadQualifier
 @WriterType.InsertsWriterQualifier
-class InsertsItemWriter implements ItemWriter<InputFileItem>, InitializingBean {
+class InsertsItemWriter implements ItemStreamWriter<InputFileItem>, InitializingBean {
     @Delegate(types = {JdbcBatchItemWriter.class, ItemWriter.class, InitializingBean.class})
     private final JdbcBatchItemWriter<InputFileItem> itemWriter;
 
@@ -32,7 +32,7 @@ class InsertsItemWriter implements ItemWriter<InputFileItem>, InitializingBean {
         itemWriter.setSql("""
                         INSERT INTO %s (%s, %s, %s, %s)
                         VALUES (gen_random_uuid(), :%s, :%s, :%s)""".formatted(
-                        SchemaInfo.TEST_TABLE_NAME,
+                        jobParameters.getTestTable().getTableName(),
                         SchemaInfo.TestTableColumn.ID.getSqlName(),
                         SchemaInfo.TestTableColumn.NAME.getSqlName(),
                         SchemaInfo.TestTableColumn.ARTIST.getSqlName(),
@@ -43,7 +43,7 @@ class InsertsItemWriter implements ItemWriter<InputFileItem>, InitializingBean {
                         SchemaInfo.TestTableColumn.ALBUM_NAME.getBeanFieldName()
                 )
         );
-        if (jobParameters.isAdvancedDataSource()) {
+        if (jobParameters.getWriterType() == WriterType.INSERTS_ADVANCED) {
             itemWriter.setDataSource(advancedDataSource);
         } else {
             itemWriter.setDataSource(defaultDataSource);

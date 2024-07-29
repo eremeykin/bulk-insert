@@ -15,9 +15,14 @@ import pete.eremeykin.bulkinsert.util.schema.SchemaInfo;
 class TruncateCommand {
     private final JdbcTemplate jdbcTemplate;
 
-    @ShellMethod(value = "Truncate test table", key = {"truncate", "tr"})
+    @ShellMethod(value = "Truncate test tables", key = {"truncate", "tr"})
     public String countRows() {
-        int rowsDeleted = jdbcTemplate.update("DELETE FROM %s".formatted(SchemaInfo.TEST_TABLE_NAME));
-        return "%,d rows have been deleted from '%s' table".formatted(rowsDeleted, SchemaInfo.TEST_TABLE_NAME);
+        StringBuilder result = new StringBuilder();
+        for (SchemaInfo.TestTable testTable : SchemaInfo.TestTable.values()) {
+            String tableName = testTable.getTableName();
+            int rowsDeleted = jdbcTemplate.update("DELETE FROM %s".formatted(tableName));
+            result.append("%,d rows have been deleted from '%s' table\n".formatted(rowsDeleted, tableName));
+        }
+        return result.toString();
     }
 }

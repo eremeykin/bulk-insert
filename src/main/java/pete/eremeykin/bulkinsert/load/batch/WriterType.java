@@ -10,7 +10,8 @@ import java.lang.annotation.Target;
 enum WriterType {
     COPY_ASYNC,
     COPY_SYNC,
-    INSERTS,
+    INSERTS_DEFAULT,
+    INSERTS_ADVANCED,
     ;
 
     @Retention(RetentionPolicy.RUNTIME)

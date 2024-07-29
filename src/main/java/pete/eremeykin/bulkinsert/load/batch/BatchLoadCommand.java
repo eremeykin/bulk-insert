@@ -5,6 +5,8 @@ import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 import pete.eremeykin.bulkinsert.job.util.JobLaunchingService;
+import pete.eremeykin.bulkinsert.util.schema.SchemaInfo;
+import pete.eremeykin.bulkinsert.util.schema.SchemaInfo.TestTable;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -21,8 +23,7 @@ class BatchLoadCommand {
     String batchLoad(
             @ShellOption(help = "Path to the source data file") File sourceFile,
             @ShellOption(help = "Writer type", defaultValue = "COPY_SYNC") WriterType writerType,
-            @ShellOption(help = "Enable reWriteBatchedInserts=true parameter") boolean useAdvancedDataSource,
-            @ShellOption(help = "Chunk size", defaultValue = "1500") int chunkSize
+            @ShellOption(help = "Destination table type", defaultValue = "NO_PK") TestTable testTable
     ) throws Exception {
         if (!Files.exists(sourceFile.toPath())) {
             return "The specified source file %s does not exist".formatted(sourceFile);
@@ -30,8 +31,8 @@ class BatchLoadCommand {
         BatchLoadJobParameters jobParameters = new BatchLoadJobParameters(
                 UUID.randomUUID(),
                 sourceFile,
-                useAdvancedDataSource,
-                writerType
+                writerType,
+                testTable
         );
         return jobLaunchingService.launchJob(jobParameters);
     }

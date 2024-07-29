@@ -17,7 +17,12 @@ class CountRowsCommand {
 
     @ShellMethod(value = "Print number of rows currently present in the test table", key = {"count-rows", "cr"})
     public String countRows() {
-        Long rows = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM %s".formatted(SchemaInfo.TEST_TABLE_NAME), Long.class);
-        return "'%s' table contains %,d rows.".formatted(SchemaInfo.TEST_TABLE_NAME, rows);
+        StringBuilder result = new StringBuilder();
+        for (SchemaInfo.TestTable testTable : SchemaInfo.TestTable.values()) {
+            String tableName = testTable.getTableName();
+            Long rows = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM %s".formatted(tableName), Long.class);
+            result.append("'%s' table contains %,d rows.\n".formatted(tableName, rows));
+        }
+        return result.toString();
     }
 }

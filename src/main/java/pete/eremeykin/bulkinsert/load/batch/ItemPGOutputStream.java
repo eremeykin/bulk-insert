@@ -6,7 +6,6 @@ import org.postgresql.copy.PGCopyOutputStream;
 import org.springframework.batch.item.file.transform.BeanWrapperFieldExtractor;
 import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.jdbc.datasource.DataSourceUtils;
-import pete.eremeykin.bulkinsert.input.InputFileItem;
 import pete.eremeykin.bulkinsert.util.schema.SchemaInfo;
 
 import javax.sql.DataSource;
@@ -19,34 +18,41 @@ import java.util.UUID;
 import static org.springframework.batch.item.support.AbstractFileItemWriter.DEFAULT_LINE_SEPARATOR;
 
 final class ItemPGOutputStream<I> implements AutoCloseable {
-    private static final String COPY_SQL = """
-            COPY songs (%s, %s, %s, %s)
+    private static final String DELIMITER = ",";
+    private static final String COPY_SQL_TEMPLATE = """
+            COPY %s (%s, %s, %s, %s)
             FROM STDIN
-            DELIMITER ','
+            DELIMITER '%s'
             CSV;
             """.formatted(
+            "%s",
             SchemaInfo.TestTableColumn.ID.getSqlName(),
             SchemaInfo.TestTableColumn.NAME.getSqlName(),
             SchemaInfo.TestTableColumn.ARTIST.getSqlName(),
-            SchemaInfo.TestTableColumn.ALBUM_NAME.getSqlName()
+            SchemaInfo.TestTableColumn.ALBUM_NAME.getSqlName(),
+            DELIMITER
     );
 
     private final PGCopyOutputStream delegate;
     private final DataSourceUtilsConnection connection;
     private final DelimitedLineAggregator<I> lineAggregator;
 
-    public ItemPGOutputStream(DataSource dataSource) throws SQLException {
+    public ItemPGOutputStream(DataSource dataSource,
+                              String tableName
+    ) throws SQLException {
         this.connection = new DataSourceUtilsConnection(dataSource);
         this.lineAggregator = new DelimitedLineAggregator<>();
         BeanWrapperFieldExtractor<I> fieldExtractor = new BeanWrapperFieldExtractor<>();
         fieldExtractor.setNames(SchemaInfo.TestTableColumn.getBeanFieldNames());
         lineAggregator.setFieldExtractor(fieldExtractor);
-        this.delegate = new PGCopyOutputStream(connection.unwrap(PGConnection.class), COPY_SQL);
+        lineAggregator.setDelimiter(DELIMITER);
+        String copySqlCommand = COPY_SQL_TEMPLATE.formatted(tableName);
+        this.delegate = new PGCopyOutputStream(connection.unwrap(PGConnection.class), copySqlCommand);
     }
 
     public void write(I item) throws IOException {
         delegate.write(UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8));
-        delegate.write(",".getBytes(StandardCharsets.UTF_8));
+        delegate.write(DELIMITER.getBytes(StandardCharsets.UTF_8));
         delegate.write(lineAggregator.aggregate(item).getBytes(StandardCharsets.UTF_8));
         delegate.write(DEFAULT_LINE_SEPARATOR.getBytes(StandardCharsets.UTF_8));
     }

@@ -1,7 +1,9 @@
 package pete.eremeykin.bulkinsert.load.batch;
 
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.item.*;
+import org.springframework.batch.item.Chunk;
+import org.springframework.batch.item.ExecutionContext;
+import org.springframework.batch.item.ItemStreamException;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Component;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
@@ -12,14 +14,14 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import static pete.eremeykin.bulkinsert.load.batch.WriterType.*;
+import static pete.eremeykin.bulkinsert.load.batch.WriterType.CopyAsyncWriterQualifier;
 
 
 @StepScope
 @Component
 @BatchLoadQualifier
 @CopyAsyncWriterQualifier
-class AsyncCopyItemWriter implements ItemWriter<InputFileItem>, ItemStream {
+class AsyncCopyItemWriter implements ItemStreamWriter<InputFileItem> {
     private final BlockingQueue<QueueElement> queue;
     private final FutureTask<Void> backgroundTask;
     private final AsyncTaskExecutor taskExecutor;
@@ -29,11 +31,13 @@ class AsyncCopyItemWriter implements ItemWriter<InputFileItem>, ItemStream {
     }
 
     public AsyncCopyItemWriter(DataSource defaultDataSource,
-                               @WriterType.CopyAsyncWriterQualifier AsyncTaskExecutor writerTaskExecutor) {
+                               @WriterType.CopyAsyncWriterQualifier AsyncTaskExecutor writerTaskExecutor,
+                               BatchLoadJobParameters jobParameters) {
         this.queue = new LinkedBlockingQueue<>();
         this.taskExecutor = writerTaskExecutor;
+        String tableName = jobParameters.getTestTable().getTableName();
         this.backgroundTask = new FutureTask<>(() -> {
-            try (var outputStream = new ItemPGOutputStream<>(defaultDataSource)) {
+            try (var outputStream = new ItemPGOutputStream<>(defaultDataSource, tableName)) {
                 for (QueueElement element = null;
                      element != QueueElement.POISONED;
                      element = queue.poll(100, TimeUnit.MILLISECONDS)) {

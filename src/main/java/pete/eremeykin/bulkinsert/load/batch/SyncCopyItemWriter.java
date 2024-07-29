@@ -1,7 +1,10 @@
 package pete.eremeykin.bulkinsert.load.batch;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.item.*;
+import org.springframework.batch.item.Chunk;
+import org.springframework.batch.item.ExecutionContext;
+import org.springframework.batch.item.ItemStreamException;
 import org.springframework.stereotype.Component;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
 
@@ -12,15 +15,13 @@ import java.sql.SQLException;
 
 @StepScope
 @Component
+@RequiredArgsConstructor
 @BatchLoadQualifier
 @WriterType.CopySyncWriterQualifier
-class SyncCopyItemWriter implements ItemWriter<InputFileItem>, ItemStream {
+class SyncCopyItemWriter implements ItemStreamWriter<InputFileItem> {
     private final DataSource dataSource;
+    private final BatchLoadJobParameters jobParameters;
     private ItemPGOutputStream<InputFileItem> outputStream;
-
-    public SyncCopyItemWriter(DataSource defaultDataSource) {
-        this.dataSource = defaultDataSource;
-    }
 
     @Override
     public void write(Chunk<? extends InputFileItem> chunk) throws IOException {
@@ -31,8 +32,9 @@ class SyncCopyItemWriter implements ItemWriter<InputFileItem>, ItemStream {
 
     @Override
     public void open(ExecutionContext executionContext) throws ItemStreamException {
+        String tableName = jobParameters.getTestTable().getTableName();
         try {
-            this.outputStream = new ItemPGOutputStream<>(dataSource);
+            this.outputStream = new ItemPGOutputStream<>(dataSource, tableName);
         } catch (SQLException e) {
             throw new ItemStreamException("Unable to open Postgres copy stream", e);
         }
