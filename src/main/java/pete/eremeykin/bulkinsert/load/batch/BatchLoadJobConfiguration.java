@@ -2,17 +2,23 @@ package pete.eremeykin.bulkinsert.load.batch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.Delegate;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.partition.support.Partitioner;
 import org.springframework.batch.core.repository.JobRepository;
+import org.springframework.batch.core.step.AbstractStep;
 import org.springframework.batch.core.step.builder.StepBuilder;
+import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.BeanNameAware;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -63,7 +69,13 @@ class BatchLoadJobConfiguration {
     }
 
     @Bean
-    Step loadStepManager(Step loadStep) {
+    @JobScope
+    Step loadStepManager(
+            @BatchLoadQualifier Step batchLoadStep,
+            @TaskletLoadQualifier Step taskletLoadStep,
+            @Value("#{jobParameters['writerType']}") WriterType writerType
+    ) {
+        Step loadStep = writerType == WriterType.COPY_NON_BATCH ? taskletLoadStep : batchLoadStep;
         ThreadPoolTaskExecutor taskExecutor = taskExecutor();
         return new StepBuilder(LOAD_SOURCE_FILE_STEP_NAME + MANAGER_SUFFIX, jobRepository)
                 .partitioner(LOAD_SOURCE_FILE_STEP_NAME, partitioner())
@@ -74,7 +86,16 @@ class BatchLoadJobConfiguration {
     }
 
     @Bean
-    Step loadStep(
+    @TaskletLoadQualifier
+    AbstractStep taskletLoadStep(@TaskletLoadQualifier Tasklet copyTasklet) {
+        return new StepBuilder(LOAD_SOURCE_FILE_STEP_NAME, jobRepository)
+                .tasklet(copyTasklet, platformTransactionManager)
+                .build();
+    }
+
+    @Bean
+    @BatchLoadQualifier
+    AbstractStep batchLoadStep(
             @BatchLoadQualifier ItemReader<InputFileItem> itemReader,
             BatchLoadProperties batchLoadProperties,
             ItemWriter<InputFileItem> itemWriter
@@ -88,6 +109,7 @@ class BatchLoadJobConfiguration {
 
     @StepScope
     @Bean
+    @BatchLoadQualifier
     ItemStreamWriter<InputFileItem> itemWriter(
             @WriterType.CopyAsyncWriterQualifier ItemStreamWriter<InputFileItem> copyAsyncWriter,
             @WriterType.CopySyncWriterQualifier ItemStreamWriter<InputFileItem> copySyncWriter,

@@ -10,6 +10,6 @@ import static java.lang.annotation.ElementType.*;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({TYPE, FIELD, PARAMETER, METHOD})
-@Qualifier("batchLoad")
-@interface BatchLoadQualifier {
+@Qualifier("taskletLoad")
+@interface TaskletLoadQualifier {
 }

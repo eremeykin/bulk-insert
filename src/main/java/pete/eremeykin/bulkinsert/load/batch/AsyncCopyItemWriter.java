@@ -7,6 +7,7 @@ import org.springframework.batch.item.ItemStreamException;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Component;
 import pete.eremeykin.bulkinsert.input.InputFileItem;
+import pete.eremeykin.bulkinsert.load.batch.CopyUtils.ItemPGOutputStream;
 
 import javax.sql.DataSource;
 import java.util.concurrent.BlockingQueue;

@@ -10,6 +10,7 @@ import java.lang.annotation.Target;
 enum WriterType {
     COPY_ASYNC,
     COPY_SYNC,
+    COPY_NON_BATCH,
     INSERTS_DEFAULT,
     INSERTS_ADVANCED,
     ;
