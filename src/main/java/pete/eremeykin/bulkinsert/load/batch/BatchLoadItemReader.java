@@ -14,26 +14,26 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
-import pete.eremeykin.bulkinsert.input.InputFileItem;
+import pete.eremeykin.bulkinsert.input.InputItem;
 import pete.eremeykin.bulkinsert.util.schema.SchemaInfo;
 
 @Primary
 @StepScope
 @BatchLoadQualifier
 @Component
-class BatchLoadItemReader implements ItemReader<InputFileItem>, InitializingBean, ItemStreamReader<InputFileItem> {
+class BatchLoadItemReader implements ItemReader<InputItem>, InitializingBean, ItemStreamReader<InputItem> {
     @Delegate(types = {ItemReader.class, InitializingBean.class, ItemStreamReader.class})
-    private final FlatFileItemReader<InputFileItem> itemReader;
+    private final FlatFileItemReader<InputItem> itemReader;
 
     BatchLoadItemReader(BatchLoadJobParameters jobParameters) {
-        FlatFileItemReader<InputFileItem> flatFileItemReader = new FlatFileItemReader<>();
+        FlatFileItemReader<InputItem> flatFileItemReader = new FlatFileItemReader<>();
         flatFileItemReader.setResource(new FileSystemResource(jobParameters.getSourcefile()));
-        DefaultLineMapper<InputFileItem> lineMapper = new DefaultLineMapper<>();
+        DefaultLineMapper<InputItem> lineMapper = new DefaultLineMapper<>();
         DelimitedLineTokenizer tokenizer = new DelimitedLineTokenizer(",");
-        tokenizer.setNames(SchemaInfo.TestTableColumn.getBeanFieldNames());
+        tokenizer.setNames(SchemaInfo.TestTableColumn.getBeanFieldNames(true));
         lineMapper.setLineTokenizer(tokenizer);
-        BeanWrapperFieldSetMapper<InputFileItem> objectBeanWrapperFieldSetMapper = new BeanWrapperFieldSetMapper<>();
-        objectBeanWrapperFieldSetMapper.setTargetType(InputFileItem.class);
+        BeanWrapperFieldSetMapper<InputItem> objectBeanWrapperFieldSetMapper = new BeanWrapperFieldSetMapper<>();
+        objectBeanWrapperFieldSetMapper.setTargetType(InputItem.class);
         lineMapper.setFieldSetMapper(objectBeanWrapperFieldSetMapper);
         flatFileItemReader.setLineMapper(lineMapper);
         flatFileItemReader.setSaveState(false);
@@ -41,7 +41,7 @@ class BatchLoadItemReader implements ItemReader<InputFileItem>, InitializingBean
     }
 
     @Override
-    public InputFileItem read() throws Exception {
+    public InputItem read() throws Exception {
         return itemReader.read();
     }
 

@@ -1,13 +1,12 @@
 package pete.eremeykin.bulkinsert.load.batch;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemStreamException;
 import org.springframework.stereotype.Component;
-import pete.eremeykin.bulkinsert.input.InputFileItem;
-import pete.eremeykin.bulkinsert.load.batch.CopyUtils.ItemPGOutputStream;
+import pete.eremeykin.bulkinsert.input.OutputItem;
+import pete.eremeykin.bulkinsert.load.batch.CopyUtils.LinePGOutputStream;
 
 import javax.sql.DataSource;
 import java.io.IOException;
@@ -16,18 +15,22 @@ import java.sql.SQLException;
 
 @StepScope
 @Component
-@RequiredArgsConstructor
 @BatchLoadQualifier
 @WriterType.CopySyncWriterQualifier
-class SyncCopyItemWriter implements ItemStreamWriter<InputFileItem> {
+class SyncCopyItemWriter implements ItemStreamWriter<OutputItem> {
     private final DataSource dataSource;
     private final BatchLoadJobParameters jobParameters;
-    private ItemPGOutputStream<InputFileItem> outputStream;
+    private LinePGOutputStream outputStream;
+
+    public SyncCopyItemWriter(DataSource dataSource, BatchLoadJobParameters jobParameters) {
+        this.dataSource = dataSource;
+        this.jobParameters = jobParameters;
+    }
 
     @Override
-    public void write(Chunk<? extends InputFileItem> chunk) throws IOException {
-        for (InputFileItem item : chunk) {
-            this.outputStream.write(item);
+    public void write(Chunk<? extends OutputItem> chunk) throws IOException {
+        for (OutputItem item : chunk) {
+            CopyUtils.writeItem(item, outputStream);
         }
     }
 
@@ -35,7 +38,7 @@ class SyncCopyItemWriter implements ItemStreamWriter<InputFileItem> {
     public void open(ExecutionContext executionContext) throws ItemStreamException {
         String tableName = jobParameters.getTestTable().getTableName();
         try {
-            this.outputStream = new ItemPGOutputStream<>(dataSource, tableName);
+            this.outputStream = new LinePGOutputStream(dataSource, tableName);
         } catch (SQLException e) {
             throw new ItemStreamException("Unable to open Postgres copy stream", e);
         }

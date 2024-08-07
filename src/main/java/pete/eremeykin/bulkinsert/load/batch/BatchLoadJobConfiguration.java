@@ -2,7 +2,6 @@ package pete.eremeykin.bulkinsert.load.batch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.Delegate;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.JobScope;
@@ -17,8 +16,6 @@ import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.BeanNameAware;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -27,12 +24,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
-import pete.eremeykin.bulkinsert.input.InputFileItem;
+import pete.eremeykin.bulkinsert.input.InputItem;
+import pete.eremeykin.bulkinsert.input.OutputItem;
 import pete.eremeykin.bulkinsert.job.util.JobLaunchingService;
 import pete.eremeykin.bulkinsert.job.util.parameters.converter.JacksonJobParametersConverter;
 import pete.eremeykin.bulkinsert.job.util.parameters.converter.JobParametersConverter;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Configuration
 @RequiredArgsConstructor
@@ -96,34 +95,43 @@ class BatchLoadJobConfiguration {
     @Bean
     @BatchLoadQualifier
     AbstractStep batchLoadStep(
-            @BatchLoadQualifier ItemReader<InputFileItem> itemReader,
+            @BatchLoadQualifier ItemReader<InputItem> itemReader,
             BatchLoadProperties batchLoadProperties,
-            ItemWriter<InputFileItem> itemWriter
+            ItemWriter<OutputItem> itemWriter
     ) {
         return new StepBuilder(LOAD_SOURCE_FILE_STEP_NAME, jobRepository)
-                .<InputFileItem, InputFileItem>chunk(batchLoadProperties.getChunkSize(), platformTransactionManager)
+                .<InputItem, OutputItem>chunk(batchLoadProperties.getChunkSize(), platformTransactionManager)
                 .reader(itemReader)
+                .processor(this::createOutputItem)
                 .writer(itemWriter)
                 .build();
+    }
+
+    private OutputItem createOutputItem(InputItem inputItem) {
+        return new OutputItem(
+                UUID.randomUUID(),
+                inputItem.getName(),
+                inputItem.getArtist(),
+                inputItem.getAlbumName()
+        );
     }
 
     @StepScope
     @Bean
     @BatchLoadQualifier
-    ItemStreamWriter<InputFileItem> itemWriter(
-            @WriterType.CopyAsyncWriterQualifier ItemStreamWriter<InputFileItem> copyAsyncWriter,
-            @WriterType.CopySyncWriterQualifier ItemStreamWriter<InputFileItem> copySyncWriter,
-            @WriterType.InsertsWriterQualifier ItemStreamWriter<InputFileItem> insertsItemWriter,
+    ItemStreamWriter<OutputItem> itemWriter(
+            @WriterType.CopyAsyncWriterQualifier ItemStreamWriter<OutputItem> copyAsyncWriter,
+            @WriterType.CopySyncWriterQualifier ItemStreamWriter<OutputItem> copySyncWriter,
+            @WriterType.InsertsWriterQualifier ItemStreamWriter<OutputItem> insertsItemWriter,
             BatchLoadJobParameters jobParameters
     ) {
-        ItemStreamWriter<InputFileItem> actualWriter;
-        switch (jobParameters.getWriterType()) {
-            case COPY_ASYNC -> actualWriter = copyAsyncWriter;
-            case COPY_SYNC -> actualWriter = copySyncWriter;
-            case INSERTS_DEFAULT, INSERTS_ADVANCED -> actualWriter = insertsItemWriter;
-            default -> throw new IllegalStateException("Unknown writer type: " + jobParameters.getWriterType());
-        }
-        return actualWriter;
+        return switch (jobParameters.getWriterType()) {
+            case COPY_ASYNC -> copyAsyncWriter;
+            case COPY_SYNC -> copySyncWriter;
+            case INSERTS_DEFAULT, INSERTS_ADVANCED -> insertsItemWriter;
+            case COPY_NON_BATCH ->
+                    throw new IllegalArgumentException("itemWriter can't be used with " + jobParameters.getWriterType());
+        };
     }
 
     @Bean

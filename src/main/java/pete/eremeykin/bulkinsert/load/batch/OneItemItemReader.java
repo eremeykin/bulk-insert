@@ -6,13 +6,13 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemStreamException;
 import org.springframework.batch.item.ItemStreamReader;
 import org.springframework.stereotype.Component;
-import pete.eremeykin.bulkinsert.input.InputFileItem;
+import pete.eremeykin.bulkinsert.input.InputItem;
 
 @StepScope
 @BatchLoadQualifier
 @Component
-class OneItemItemReader implements ItemReader<InputFileItem>, ItemStreamReader<InputFileItem> {
-    private final InputFileItem item = new InputFileItem(
+class OneItemItemReader implements ItemReader<InputItem>, ItemStreamReader<InputItem> {
+    private final InputItem item = new InputItem(
             "Waylaying Scooter", "BP Rania", "Mammoth Crocodile"
     );
     // Thread confined
@@ -20,7 +20,7 @@ class OneItemItemReader implements ItemReader<InputFileItem>, ItemStreamReader<I
     private int max = 0;
 
     @Override
-    public InputFileItem read() {
+    public InputItem read() {
         if (counter++ >= max) {
             return null;
         }

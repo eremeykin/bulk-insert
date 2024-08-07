@@ -7,7 +7,7 @@ import lombok.*;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class InputFileItem {
+public class InputItem {
     private String name;
     private String artist;
     private String albumName;

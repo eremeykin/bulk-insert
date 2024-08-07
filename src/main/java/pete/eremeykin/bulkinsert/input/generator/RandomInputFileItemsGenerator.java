@@ -3,7 +3,7 @@ package pete.eremeykin.bulkinsert.input.generator;
 import net.datafaker.Faker;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import pete.eremeykin.bulkinsert.input.InputFileItem;
+import pete.eremeykin.bulkinsert.input.InputItem;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,7 +13,7 @@ class RandomInputFileItemsGenerator implements ItemsGenerator {
     private final Faker faker = new Faker();
 
     @Override
-    public InputFileItem generateNext() {
+    public InputItem generateNext() {
         String songName = capitalized(List.of(
                 faker.verb().ingForm(), faker.dog().name()
         ));
@@ -21,7 +21,7 @@ class RandomInputFileItemsGenerator implements ItemsGenerator {
         String albumName = capitalized(List.of(
                 faker.size().adjective(), faker.animal().name()
         ));
-        return new InputFileItem(
+        return new InputItem(
                 songName,
                 artist,
                 albumName

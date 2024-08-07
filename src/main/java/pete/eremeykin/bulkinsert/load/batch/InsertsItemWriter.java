@@ -9,18 +9,19 @@ import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;
 import pete.eremeykin.bulkinsert.db.AdvancedQualifier;
-import pete.eremeykin.bulkinsert.input.InputFileItem;
-import pete.eremeykin.bulkinsert.util.schema.SchemaInfo;
+import pete.eremeykin.bulkinsert.input.OutputItem;
 
 import javax.sql.DataSource;
+
+import static pete.eremeykin.bulkinsert.util.schema.SchemaInfo.TestTableColumn;
 
 @StepScope
 @Component
 @BatchLoadQualifier
 @WriterType.InsertsWriterQualifier
-class InsertsItemWriter implements ItemStreamWriter<InputFileItem>, InitializingBean {
+class InsertsItemWriter implements ItemStreamWriter<OutputItem>, InitializingBean {
     @Delegate(types = {JdbcBatchItemWriter.class, ItemWriter.class, InitializingBean.class})
-    private final JdbcBatchItemWriter<InputFileItem> itemWriter;
+    private final JdbcBatchItemWriter<OutputItem> itemWriter;
 
     public InsertsItemWriter(
             BatchLoadJobParameters jobParameters,
@@ -30,28 +31,21 @@ class InsertsItemWriter implements ItemStreamWriter<InputFileItem>, Initializing
         this.itemWriter = new JdbcBatchItemWriter<>();
         itemWriter.setItemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>());
         itemWriter.setSql("""
-                        INSERT INTO %s (%s, %s, %s, %s)
-                        VALUES (gen_random_uuid(), :%s, :%s, :%s)""".formatted(
+                INSERT INTO %s (%s)
+                VALUES (%s)""".formatted(
                         jobParameters.getTestTable().getTableName(),
-                        SchemaInfo.TestTableColumn.ID.getSqlName(),
-                        SchemaInfo.TestTableColumn.NAME.getSqlName(),
-                        SchemaInfo.TestTableColumn.ARTIST.getSqlName(),
-                        SchemaInfo.TestTableColumn.ALBUM_NAME.getSqlName(),
-                        // ID is generated
-                        SchemaInfo.TestTableColumn.NAME.getBeanFieldName(),
-                        SchemaInfo.TestTableColumn.ARTIST.getBeanFieldName(),
-                        SchemaInfo.TestTableColumn.ALBUM_NAME.getBeanFieldName()
+                TestTableColumn.getJoined(TestTableColumn::getSqlName),
+                TestTableColumn.getJoined((column) -> ":" + column.getBeanFieldName())
                 )
         );
-        if (jobParameters.getWriterType() == WriterType.INSERTS_ADVANCED) {
-            itemWriter.setDataSource(advancedDataSource);
-        } else {
-            itemWriter.setDataSource(defaultDataSource);
-        }
+        DataSource dataSource = jobParameters.getWriterType() == WriterType.INSERTS_ADVANCED ?
+                advancedDataSource
+                : defaultDataSource;
+        itemWriter.setDataSource(dataSource);
     }
 
     @Override
-    public void write(Chunk<? extends InputFileItem> chunk) throws Exception {
+    public void write(Chunk<? extends OutputItem> chunk) throws Exception {
         itemWriter.write(chunk);
     }
 }

@@ -1,9 +1,9 @@
 package pete.eremeykin.bulkinsert.input.generator;
 
-import pete.eremeykin.bulkinsert.input.InputFileItem;
+import pete.eremeykin.bulkinsert.input.InputItem;
 
 interface ItemsGenerator {
 
-    InputFileItem generateNext();
+    InputItem generateNext();
 
 }

@@ -15,7 +15,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
-import pete.eremeykin.bulkinsert.input.InputFileItem;
+import pete.eremeykin.bulkinsert.input.InputItem;
 import pete.eremeykin.bulkinsert.job.util.JobLaunchingService;
 import pete.eremeykin.bulkinsert.job.util.StatusReportingChunkListener;
 import pete.eremeykin.bulkinsert.job.util.parameters.converter.JacksonJobParametersConverter;
@@ -32,16 +32,16 @@ class InputGeneratorJobConfiguration {
     private final JobRepository jobRepository;
     private final PlatformTransactionManager platformTransactionManager;
     private final InputGeneratorProperties properties;
-    private final ItemReader<InputFileItem> itemReader;
-    private final ItemWriter<InputFileItem> itemWriter;
+    private final ItemReader<InputItem> itemReader;
+    private final ItemWriter<InputItem> itemWriter;
 
     InputGeneratorJobConfiguration(JobRepository jobRepository,
                                    PlatformTransactionManager platformTransactionManager,
                                    InputGeneratorProperties properties,
                                    @InputGeneratorQualifier
-                                   ItemReader<InputFileItem> itemReader,
+                                   ItemReader<InputItem> itemReader,
                                    @InputGeneratorQualifier
-                                   ItemWriter<InputFileItem> itemWriter) {
+                                   ItemWriter<InputItem> itemWriter) {
         this.jobRepository = jobRepository;
         this.platformTransactionManager = platformTransactionManager;
         this.properties = properties;
@@ -59,7 +59,7 @@ class InputGeneratorJobConfiguration {
     @Bean
     Step generateInputFile() {
         return new StepBuilder(GENERATE_INPUT_FILE_STEP_NAME, jobRepository)
-                .<InputFileItem, InputFileItem>chunk(properties.getChunkSize(), platformTransactionManager)
+                .<InputItem, InputItem>chunk(properties.getChunkSize(), platformTransactionManager)
                 .reader(itemReader)
                 .writer(itemWriter)
                 .listener(new StatusReportingChunkListener())

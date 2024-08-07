@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.UtilityClass;
 
 import java.util.Arrays;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @UtilityClass
 public class SchemaInfo {
@@ -30,11 +32,21 @@ public class SchemaInfo {
         private final String beanFieldName;
         private final boolean isReadable;
 
-        public static String[] getBeanFieldNames() {
+        public static String[] getBeanFieldNames(boolean onlyReadable) {
             return Arrays.stream(TestTableColumn.values())
-                    .filter(TestTableColumn::isReadable)
+                    .filter((field) -> !onlyReadable || field.isReadable)
                     .map(TestTableColumn::getBeanFieldName)
                     .toArray(String[]::new);
+        }
+
+        public static String getJoined(Function<TestTableColumn, String> extractor) {
+            return getJoined(extractor, ", ");
+        }
+
+        public static String getJoined(Function<TestTableColumn, String> extractor, String delimiter) {
+            return Arrays.stream(TestTableColumn.values())
+                    .map(extractor)
+                    .collect(Collectors.joining(delimiter));
         }
     }
 }

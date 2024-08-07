@@ -6,8 +6,8 @@ import org.springframework.batch.item.ExecutionContext;
 import org.springframework.batch.item.ItemStreamException;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Component;
-import pete.eremeykin.bulkinsert.input.InputFileItem;
-import pete.eremeykin.bulkinsert.load.batch.CopyUtils.ItemPGOutputStream;
+import pete.eremeykin.bulkinsert.input.OutputItem;
+import pete.eremeykin.bulkinsert.load.batch.CopyUtils.LinePGOutputStream;
 
 import javax.sql.DataSource;
 import java.util.concurrent.BlockingQueue;
@@ -22,13 +22,19 @@ import static pete.eremeykin.bulkinsert.load.batch.WriterType.CopyAsyncWriterQua
 @Component
 @BatchLoadQualifier
 @CopyAsyncWriterQualifier
-class AsyncCopyItemWriter implements ItemStreamWriter<InputFileItem> {
-    private final BlockingQueue<QueueElement> queue;
+class AsyncCopyItemWriter implements ItemStreamWriter<OutputItem> {
+    private final BlockingQueue<QueueElement<Chunk<? extends OutputItem>>> queue;
     private final FutureTask<Void> backgroundTask;
     private final AsyncTaskExecutor taskExecutor;
 
-    private record QueueElement(Chunk<? extends InputFileItem> chunk) {
-        private static final QueueElement POISONED = new QueueElement(null);
+    private record QueueElement<T>(T value) {
+        private static final QueueElement<?> POISONED = new QueueElement<>(null);
+
+        @SuppressWarnings("unchecked")
+        // always succeeds as null can be cast to any type
+        private static <T> QueueElement<T> getPoisoned() {
+            return (QueueElement<T>) POISONED;
+        }
     }
 
     public AsyncCopyItemWriter(DataSource defaultDataSource,
@@ -38,13 +44,13 @@ class AsyncCopyItemWriter implements ItemStreamWriter<InputFileItem> {
         this.taskExecutor = writerTaskExecutor;
         String tableName = jobParameters.getTestTable().getTableName();
         this.backgroundTask = new FutureTask<>(() -> {
-            try (var outputStream = new ItemPGOutputStream<>(defaultDataSource, tableName)) {
-                for (QueueElement element = null;
+            try (var outputStream = new LinePGOutputStream(defaultDataSource, tableName)) {
+                for (QueueElement<Chunk<? extends OutputItem>> element = null;
                      element != QueueElement.POISONED;
                      element = queue.poll(100, TimeUnit.MILLISECONDS)) {
                     if (element == null) continue;
-                    for (InputFileItem item : element.chunk) {
-                        outputStream.write(item);
+                    for (OutputItem item : element.value) {
+                        CopyUtils.writeItem(item, outputStream);
                     }
                 }
                 return null;
@@ -53,7 +59,7 @@ class AsyncCopyItemWriter implements ItemStreamWriter<InputFileItem> {
     }
 
     @Override
-    public void write(Chunk<? extends InputFileItem> chunk) {
+    public void write(Chunk<? extends OutputItem> chunk) {
         queue.add(new QueueElement(chunk));
     }
 
@@ -65,7 +71,7 @@ class AsyncCopyItemWriter implements ItemStreamWriter<InputFileItem> {
     @Override
     public void close() throws ItemStreamException {
         try {
-            queue.add(QueueElement.POISONED);
+            queue.add(QueueElement.getPoisoned());
             backgroundTask.get();
         } catch (Exception e) {
             throw new ItemStreamException("Unable to close " + this.getClass().getName(), e);

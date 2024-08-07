@@ -10,22 +10,22 @@ import org.springframework.batch.item.file.transform.DelimitedLineAggregator;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.stereotype.Component;
-import pete.eremeykin.bulkinsert.input.InputFileItem;
+import pete.eremeykin.bulkinsert.input.InputItem;
 import pete.eremeykin.bulkinsert.util.schema.SchemaInfo;
 
 @JobScope
 @InputGeneratorQualifier
 @Component
-class InputGeneratorItemWriter implements ItemWriter<InputFileItem>, InitializingBean, ItemStream {
+class InputGeneratorItemWriter implements ItemWriter<InputItem>, InitializingBean, ItemStream {
     @Delegate(types = {ItemWriter.class, InitializingBean.class, ItemStream.class})
-    private final FlatFileItemWriter<InputFileItem> itemWriter;
+    private final FlatFileItemWriter<InputItem> itemWriter;
 
     public InputGeneratorItemWriter(InputGeneratorJobParameters jobParameters) {
         this.itemWriter = new FlatFileItemWriter<>();
         itemWriter.setResource(new FileSystemResource(jobParameters.getOutputFile()));
-        DelimitedLineAggregator<InputFileItem> lineAggregator = new DelimitedLineAggregator<>();
-        BeanWrapperFieldExtractor<InputFileItem> fieldExtractor = new BeanWrapperFieldExtractor<>();
-        fieldExtractor.setNames(SchemaInfo.TestTableColumn.getBeanFieldNames());
+        DelimitedLineAggregator<InputItem> lineAggregator = new DelimitedLineAggregator<>();
+        BeanWrapperFieldExtractor<InputItem> fieldExtractor = new BeanWrapperFieldExtractor<>();
+        fieldExtractor.setNames(SchemaInfo.TestTableColumn.getBeanFieldNames(true));
         lineAggregator.setFieldExtractor(fieldExtractor);
         itemWriter.setLineAggregator(lineAggregator);
         itemWriter.setAppendAllowed(false);

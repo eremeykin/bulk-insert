@@ -47,5 +47,4 @@ class LineCountingPartitioner implements Partitioner {
     public static int getMaxLineCount(ExecutionContext executionContext) {
         return executionContext.getInt(MAX_LINE_COUNT_KEY);
     }
-
 }

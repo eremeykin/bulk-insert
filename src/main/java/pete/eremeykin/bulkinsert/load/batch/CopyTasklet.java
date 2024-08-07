@@ -14,6 +14,7 @@ import javax.sql.DataSource;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.UUID;
 
 import static pete.eremeykin.bulkinsert.load.batch.CopyUtils.DELIMITER;
@@ -38,12 +39,12 @@ class CopyTasklet implements Tasklet {
                     .skip(linesToSkip)
                     .limit(limit)
                     .forEach((line) -> {
-                try {
-                    stream.writeLine(UUID.randomUUID() + DELIMITER + line);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
+                        try {
+                            stream.writeLine(UUID.randomUUID() + DELIMITER + line);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException("Unable to write line into Postgres copy stream", e);
+                        }
+                    });
         }
         return RepeatStatus.FINISHED;
     }
