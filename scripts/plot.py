@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import pandas
 
-df = pandas.read_csv("monitor_log.csv")
+df = pandas.read_csv("monitor_log.csv")[800:1500]
 
-nif = "WLP9S0"
+nif = "br-814fc035d114".upper()
 shift_df = df.shift()
 sent_bytes = df[f'NET_{nif}_BYTES_SENT']
 sent_ms = df['EPOCH_MILLIS']
@@ -14,6 +14,8 @@ recv_bytes = df[f'NET_{nif}_BYTES_RECV']
 recv_ms = df['EPOCH_MILLIS']
 recv_bytes_shift = shift_df[f'NET_{nif}_BYTES_RECV']
 recv_ms_shift = shift_df['EPOCH_MILLIS']
+
+print(df[f'NET_{nif}_PACKETS_SENT'])
 
 # millis / 10^3 = seconds
 # bytes / 1000 / 1000 = megabyte (not mebibyte /1024/1024)
@@ -26,4 +28,5 @@ df.plot(x='EPOCH_MILLIS',
             f"NET_{nif}_BYTES_SENT_DELTA",
             f"NET_{nif}_BYTES_RECV_DELTA",
         ])
+plt.grid()
 plt.show()
