@@ -6,11 +6,13 @@ import org.springframework.util.StringUtils;
 import pete.eremeykin.bulkinsert.input.InputItem;
 
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 @Component
 class RandomInputFileItemsGenerator implements ItemsGenerator {
-    private final Faker faker = new Faker();
+    private static final long SEED = 12345L;
+    private final Faker faker = new Faker(new Random(SEED));
 
     @Override
     public InputItem generateNext() {

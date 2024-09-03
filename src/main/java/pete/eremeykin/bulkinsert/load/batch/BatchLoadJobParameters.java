@@ -15,6 +15,7 @@ import java.util.UUID;
 class BatchLoadJobParameters {
     private final UUID jobId;
     private final File sourcefile;
+    private final ReaderType readerType;
     private final WriterType writerType;
     private final TestTable testTable;
 

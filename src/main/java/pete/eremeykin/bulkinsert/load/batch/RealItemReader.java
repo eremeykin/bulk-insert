@@ -19,13 +19,13 @@ import pete.eremeykin.bulkinsert.util.schema.SchemaInfo;
 
 @Primary
 @StepScope
-@BatchLoadQualifier
+@ReaderType.RealReaderQualifier
 @Component
-class BatchLoadItemReader implements ItemReader<InputItem>, InitializingBean, ItemStreamReader<InputItem> {
+class RealItemReader implements ItemReader<InputItem>, InitializingBean, ItemStreamReader<InputItem> {
     @Delegate(types = {ItemReader.class, InitializingBean.class, ItemStreamReader.class})
     private final FlatFileItemReader<InputItem> itemReader;
 
-    BatchLoadItemReader(BatchLoadJobParameters jobParameters) {
+    RealItemReader(BatchLoadJobParameters jobParameters) {
         FlatFileItemReader<InputItem> flatFileItemReader = new FlatFileItemReader<>();
         flatFileItemReader.setResource(new FileSystemResource(jobParameters.getSourcefile()));
         DefaultLineMapper<InputItem> lineMapper = new DefaultLineMapper<>();

@@ -14,6 +14,7 @@ import org.springframework.batch.core.step.AbstractStep;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.item.ItemReader;
+import org.springframework.batch.item.ItemStreamReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -114,6 +115,19 @@ class BatchLoadJobConfiguration {
                 inputItem.getArtist(),
                 inputItem.getAlbumName()
         );
+    }
+
+    @StepScope
+    @Bean
+    @BatchLoadQualifier
+    ItemStreamReader<InputItem> itemReader(
+            @ReaderType.RealReaderQualifier ItemStreamReader<InputItem> fromFileItemReader,
+            @ReaderType.FakeReaderQualifier ItemStreamReader<InputItem> fromMemoryItemReader
+    ) {
+        return switch (jobParameters.getReaderType()) {
+            case REAL -> fromFileItemReader;
+            case FAKE -> fromMemoryItemReader;
+        };
     }
 
     @StepScope

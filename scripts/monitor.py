@@ -1,8 +1,7 @@
 import csv
 import datetime
-import time
-
 import psutil
+import time
 
 
 def float_timestamp_to_millis(timestamp):
@@ -48,6 +47,9 @@ def get_net_if_attr(nif, attr):
     return get_net
 
 
+def is_good_attr(attr, obj):
+    return not attr.startswith('_') and 'method' not in str(getattr(obj, attr))
+
 base_capture = Capture()
 up_if = {if_name for if_name, value in psutil.net_if_stats().items() if value.isup}
 field_extractors = flatten([
@@ -57,12 +59,12 @@ field_extractors = flatten([
         (f"CPU_CORE_{i + 1}", get_cpu_core(i)) for i, cpu in enumerate(base_capture.cpu)
     ],
     [
-        (f"MEM_{attr.upper()}", get_mem_attr(attr)) for attr in dir(base_capture.mem) if
-        not attr.startswith('_')
+        (f"MEM_{attr.upper()}", get_mem_attr(attr)) for attr in dir(base_capture.mem)
+        if is_good_attr(attr, base_capture.mem)
     ],
     [
         [(f"NET_{nif.upper()}_{attr.upper()}", get_net_if_attr(nif, attr))
-         for attr in dir(snetio) if not attr.startswith('_') and 'method' not in str(getattr(snetio, attr))]
+         for attr in dir(snetio) if is_good_attr(attr, snetio)]
         for nif, snetio in base_capture.net.items() if nif in up_if
     ]
 ])
