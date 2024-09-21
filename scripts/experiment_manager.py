@@ -62,7 +62,7 @@ def clean():
 
 
 parameters = [
-    Parameter("table_type", values=["NO_PK", "PK"]),
+    Parameter("table_type", values=["NO_PK"]), # PK
     Parameter("reader_type", values=["REAL", "FAKE"]),
     Parameter("source_file", values=["test", "test10"]),
     Parameter("threads", values=[1, 3, 5, 8]),
