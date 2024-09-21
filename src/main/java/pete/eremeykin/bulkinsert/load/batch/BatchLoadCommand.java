@@ -30,7 +30,7 @@ class BatchLoadCommand {
             key = {"batch-load", "bl"})
     String batchLoad(
             @ShellOption(help = "Path to the source data file") File sourceFile,
-            @ShellOption(help = "Reader type", defaultValue = "FROM_FILE") ReaderType readerType,
+            @ShellOption(help = "Reader type", defaultValue = "REAL") ReaderType readerType,
             @ShellOption(help = "Writer type", defaultValue = "COPY_SYNC") WriterType writerType,
             @ShellOption(help = "Destination table type", defaultValue = "NO_PK") TestTable testTable
     ) throws Exception {

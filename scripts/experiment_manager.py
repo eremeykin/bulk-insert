@@ -1,6 +1,7 @@
+import asyncio
 import itertools
+import os.path
 import subprocess
-import time
 
 
 class Parameter:
@@ -22,6 +23,9 @@ class Setup:
 
     def __str__(self):
         return str(self.__dict__)
+
+    def file_prefix(self):
+        return f"{self.table_type}_{self.reader_type}_{self.source_file}_{self.threads}_{self.batch_size}_{self.writer_type}"
 
 
 def run(setup):
@@ -72,15 +76,30 @@ parameters = [
     ]),
 ]
 
-count = 1
 
-with open('experiment_log.csv', 'w', newline='') as experiment_log:
+async def run_experiment():
     for element in itertools.product(*[x.values for x in parameters]):
         setup = Setup(*element)
-        print(setup)
+        java_out_file_name = f"./data/{setup.file_prefix()}_java_out.csv"
+        if os.path.exists(java_out_file_name):
+            continue
         clean()
-        time.sleep(8)
+        await asyncio.sleep(4)
+        print(f"start: {setup}")
+        monitor = await asyncio.create_subprocess_shell(
+            f'/home/eremeykin/projects/personal/bulk-insert/venv/bin/python3 monitor.py ./data/{setup.file_prefix()}_monitor_log.csv',
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        await asyncio.sleep(4)
         sout = run(setup=setup)
-        print(sout.decode(), end='', file=experiment_log)
-        experiment_log.flush()
-        time.sleep(8)
+        with open(java_out_file_name, 'w', newline='') as experiment_log:
+            print("start,end,table_type,reader_type,source_file,threads,batch_size,writer_type", file=experiment_log)
+            print(sout.decode(), end='', file=experiment_log)
+            experiment_log.flush()
+        await asyncio.sleep(8)
+        monitor.terminate()
+        await monitor.wait()
+        print("stop")
+
+asyncio.run(run_experiment())

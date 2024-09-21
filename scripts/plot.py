@@ -29,14 +29,26 @@ def calculate_nif_speed(df):
 df = pandas.read_csv("monitor_log.csv")
 calculate_nif_speed(df)
 elog = pandas.read_csv("experiment_log.csv", header=None, names=["start", "end", "table_type", "source_file", "threads",
-                                                     "batch_size", "reader_type", "writer_type"])
-elog["delta_s"] = (elog["end"] - elog["start"])/1000
-print(elog)
+                                                                 "batch_size", "reader_type", "writer_type"])
+
+for index, row in elog.iterrows():
+    start, end, table_type, source_file, threads, batch_size, reader_type, writer_type = row
+    start += 3*60*60*1000
+    end += 3*60*60*1000 + 1000
+    after_start = start < df['EPOCH_MILLIS']
+    before_end = df['EPOCH_MILLIS'] < end
+    cdf = df[after_start & before_end].copy()
+    cdf['EPOCH_MILLIS'] = (cdf['EPOCH_MILLIS'] - start) / 1000
+    ax = cdf.plot(x='EPOCH_MILLIS',
+            y=[
+                f"NET_{pg_nif}_SENT_MEGABITS_PER_SEC",
+                f"NET_{pg_nif}_RECV_MEGABITS_PER_SEC",
+            ])
+    formatted_batch_size = "{:,}".format(batch_size)
+    ax.set_title(f"{table_type}, {source_file}, {threads}, {formatted_batch_size}, {reader_type}, {writer_type}")
+    # ax.set_xlabel("my x-label")
+    # ax.set_ylabel("my y-label")
+    plt.grid()
+    plt.show()
+
 exit(1)
-df.plot(x='EPOCH_MILLIS',
-        y=[
-            f"NET_{pg_nif}_SENT_MEGABITS_PER_SEC",
-            f"NET_{pg_nif}_RECV_MEGABITS_PER_SEC",
-        ])
-plt.grid()
-plt.show()

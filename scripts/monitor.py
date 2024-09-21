@@ -2,7 +2,7 @@ import csv
 import datetime
 import psutil
 import time
-
+import sys
 
 def float_timestamp_to_millis(timestamp):
     return int(timestamp * (10 ** 3))
@@ -71,7 +71,9 @@ field_extractors = flatten([
 start_time = time.monotonic()
 interval = 0.1
 
-with open('monitor_log.csv', 'w', newline='') as csv_file:
+filename = sys.argv[1]
+
+with open(filename, 'w', newline='') as csv_file:
     writer = csv.DictWriter(csv_file, fieldnames=[field_name for field_name, func in field_extractors])
     writer.writeheader()
     while True:
