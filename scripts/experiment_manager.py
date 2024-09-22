@@ -62,17 +62,36 @@ def clean():
 
 
 parameters = [
-    Parameter("table_type", values=["NO_PK"]), # PK
-    Parameter("reader_type", values=["REAL", "FAKE"]),
-    Parameter("source_file", values=["test", "test10"]),
-    Parameter("threads", values=[1, 3, 5, 8]),
-    Parameter("batch_size", values=[10 ** 3, 10 ** 4, 10 ** 5, 10 ** 6]),
+    Parameter("table_type", values=[
+        "NO_PK",
+        "PK",
+    ]),
+    Parameter("reader_type", values=[
+        "REAL",
+        "FAKE",
+    ]),
+    Parameter("source_file", values=[
+        # "test",
+        "test10"
+    ]),
+    Parameter("threads", values=[
+        1,
+        3,
+        5,
+        8
+    ]),
+    Parameter("batch_size", values=[
+        10 ** 3,
+        10 ** 4,
+        10 ** 5,
+        10 ** 6
+    ]),
     Parameter("writer_type", values=[
-        "COPY_ASYNC",
-        "COPY_SYNC",
-        "COPY_NON_BATCH",
         "INSERTS_DEFAULT",
         "INSERTS_ADVANCED",
+        "COPY_SYNC",
+        "COPY_ASYNC",
+        "COPY_NON_BATCH",
     ]),
 ]
 
@@ -99,6 +118,7 @@ async def run_experiment():
             experiment_log.flush()
         await asyncio.sleep(8)
         monitor.terminate()
+        subprocess.run(['/bin/bash', '-c', 'kill $(pgrep -f "python3 monitor.py")'], stdout=subprocess.PIPE)
         await monitor.wait()
         print("stop")
 
