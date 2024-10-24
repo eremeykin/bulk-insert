@@ -7,7 +7,7 @@ services:
     container_name: postgres-bulk-insert
     ports:
       - "${POSTGRES_PORT}:5432"
-    command: postgres -c log_statement=none -c logging_collector=off
+    command: postgres -c log_statement=all -c logging_collector=off
     restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER}

@@ -36,3 +36,12 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Custom ###
+scripts/data/
+*.png
+test
+test.csv
+testID
+test10
+testID10

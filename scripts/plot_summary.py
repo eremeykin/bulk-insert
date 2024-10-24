@@ -45,8 +45,8 @@ elog = pandas.DataFrame(rows).rename(columns={'reader_type': 'source_file', 'sou
 
 elog["time"] = (elog["end"] - elog["start"]) / 1000
 elog["label"] = elog.apply(label_experiment, axis=1)
-elog = elog[["time", "label"]]
 elog = elog.sort_values(by='time')
+elog = elog[["time", "label"]]
 plt.rcParams["font.family"] = "monospace"
 elog.plot.barh(
     figsize=(40, 60),
