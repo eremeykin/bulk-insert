@@ -20,8 +20,8 @@ class TruncateCommand {
         StringBuilder result = new StringBuilder();
         for (SchemaInfo.TestTable testTable : SchemaInfo.TestTable.values()) {
             String tableName = testTable.getTableName();
-            int rowsDeleted = jdbcTemplate.update("DELETE FROM %s".formatted(tableName));
-            result.append("%,d rows have been deleted from '%s' table\n".formatted(rowsDeleted, tableName));
+            jdbcTemplate.update("TRUNCATE TABLE %s".formatted(tableName));
+            result.append("'%s' table has been truncated\n".formatted(tableName));
         }
         return result.toString();
     }

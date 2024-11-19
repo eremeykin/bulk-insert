@@ -20,16 +20,17 @@ def label_experiment(row):
     batch_size = str(int(row['batch_size'] / 1000)) + "k"
     reader_type = row['reader_type']
     writer_type = row['writer_type']
-    if writer_type == 'INSERTS_DEFAULT':
-        return "INSERTs\n(reWriteBatchedInserts=false)"
-    if writer_type == 'INSERTS_ADVANCED':
-        return "INSERTs\n(reWriteBatchedInserts=true)"
-    if writer_type == 'COPY_SYNC':
-        return "CopyItemWriter\n(synchronous)"
-    if writer_type == 'COPY_ASYNC':
-        return "CopyItemWriter\n(asynchronous)"
-    if writer_type == 'COPY_NON_BATCH':
-        return "COPY\n(tasklet)"
+    # if writer_type == 'INSERTS_DEFAULT':
+    #     return "INSERTs\n(reWriteBatchedInserts=false)"
+    # if writer_type == 'INSERTS_ADVANCED':
+    #     return "INSERTs\n(reWriteBatchedInserts=true)"
+    # if writer_type == 'COPY_SYNC':
+    #     return "CopyItemWriter\n(synchronous)"
+    # if writer_type == 'COPY_ASYNC':
+    #     return "CopyItemWriter\n(asynchronous)"
+    # if writer_type == 'COPY_NON_BATCH':
+    #     return "COPY\n(tasklet)"
+    return f"{threads:2} threads"
     # return f"{table_type:>6} - {reader_type:5} - {threads:2} - {batch_size:>6} - {writer_type:>17}"
 
 
@@ -39,15 +40,21 @@ elog = elog[
     (elog['reader_type'] == 'REAL') |
     (False)
     ]
+
+elog = elog[
+    (elog['writer_type'] == 'COPY_NON_BATCH') |
+    (False)
+    ]
+
 elog = elog[
     (elog['table_type'] == 'NO_PK') |
     (False)
     ]
 
-elog = elog[
-    (elog['threads'] == 5) |
-    (False)
-    ]
+# elog = elog[
+#     (elog['threads'] == 8) |
+#     (False)
+#     ]
 
 elog = elog[
     (elog['batch_size'] == 100000) |
@@ -76,21 +83,21 @@ for bar in ax.patches:
             ha='center', va='center',
             fontsize=10, color='black')
 
-for bar, label in zip(ax.patches, elog['label']):
-    width = bar.get_width()
-    ax.text(-6.8, bar.get_y() + bar.get_height()/2,
-            f'{label}',
-            ha='center', va='center',
-            fontsize=10, color='black')
+# for bar, label in zip(ax.patches, elog['label']):
+#     width = bar.get_width()
+#     ax.text(-4.8, bar.get_y() + bar.get_height()/2,
+#             f'{label}',
+#             ha='center', va='center',
+#             fontsize=10, color='black')
+#
 
-
-ax.set_ylabel('method', fontsize=14)
+ax.set_ylabel('threads', fontsize=14)
 ax.set_xlabel('loading time, s', fontsize=14)
 ax.get_legend().remove()
 ax.set_axisbelow(True)
-ax.tick_params(axis='y', colors='white')
-ax.set_title('Total loading time for 5 threads, 100k items/chunk, 10M rows', fontsize=14)
-plt.xticks(np.arange(0, 35.01, 1), minor=True)
+# ax.tick_params(axis='y', colors='white')
+ax.set_title('Total loading time for COPY (tasklet), 10M rows', fontsize=14)
+plt.xticks(np.arange(0, 27.01, 1), minor=True)
 plt.grid(which='minor', alpha=0.9)
 plt.gca().xaxis.set_major_formatter(FormatStrFormatter('%ds'))
 plt.grid()
