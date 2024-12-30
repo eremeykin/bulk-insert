@@ -68,7 +68,7 @@ parameters = [
     ]),
     Parameter("reader_type", values=[
         "REAL",
-        "FAKE",
+        # "FAKE",
     ]),
     Parameter("source_file", values=[
         # "test",

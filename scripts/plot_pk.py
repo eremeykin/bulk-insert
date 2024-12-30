@@ -30,7 +30,7 @@ def label_experiment(row):
         writer_type = "CopyItemWriter\n(asynchronous)"
     if writer_type == 'COPY_NON_BATCH':
         writer_type = "COPY\n(tasklet)"
-    return f"{table_type}, {writer_type}"
+    return f"{writer_type}"
     # return f"{table_type:>6} - {reader_type:5} - {threads:2} - {batch_size:>6} - {writer_type:>17}"
 
 
@@ -42,7 +42,7 @@ elog = elog[
     ]
 
 elog = elog[
-    (elog['threads'] == 3) |
+    (elog['threads'] == 5) |
     (False)
     ]
 
@@ -53,37 +53,94 @@ elog = elog[
 
 elog["time"] = (elog["end"] - elog["start"]) / 1000
 elog["label"] = elog.apply(label_experiment, axis=1)
-elog = elog.sort_values(by='time')
-elog = elog[["time", "label"]]
+elog["index"] = 0
+
+elog.loc[elog['writer_type'] == 'INSERTS_DEFAULT', "index"] = 5
+elog.loc[elog['writer_type'] == 'INSERTS_ADVANCED', "index"] = 4
+elog.loc[elog['writer_type'] == 'COPY_SYNC', "index"] = 3
+elog.loc[elog['writer_type'] == 'COPY_ASYNC', "index"] = 2
+elog.loc[elog['writer_type'] == 'COPY_NON_BATCH', "index"] = 1
+
+elog = elog.sort_values(by='index')
+
+# elog = elog[["time", "label"]]
 plt.rcParams["font.family"] = "monospace"
 plt.rcParams["figure.autolayout"] = True
 
-ax = elog.plot.barh(
-    figsize=(10, 7),
-    y='time',
-    x='label',
-    color='orange'
-)
-xmax = 180
+fig, ax = plt.subplots(figsize=(10, 5))
+
+# Plotting bars
+elog_pk = elog[(elog['table_type'] == 'PK')]
+elog_no_pk = elog[(elog['table_type'] == 'NO_PK')]
+
+bar_pk = ax.barh(elog_pk['label'], elog_pk['time'], 0.5, label="With PK", color="skyblue")
+bar_no_pk = ax.barh(elog_no_pk['label'], elog_no_pk['time'], 0.5, label="Without PK", color="orange")
+
+
+
+# ax = elog.plot.barh(
+#     figsize=(10, 7),
+#     y='time',
+#     x='label',
+#     color='orange'
+# )
+xmax = 85
+
+rect_y_to_min_max = dict()
+
+for rect in ax.patches:
+    x, y = rect.xy
+    current = rect_y_to_min_max.get(y)
+    if current is None:
+        rect_y_to_min_max[y] = (rect.get_width(), rect.get_width())
+    else:
+        rect_y_to_min_max[y] = (min(current[0], rect.get_width()), max(current[0], rect.get_width()))
+
+# bar_add_pk = ax.barh(elog_no_pk['label'], [4 for x in elog_no_pk['time']], 0.5,
+#                      left=[rect_y_to_min_max[y][0] for y in rect_y_to_min_max],
+#                      linestyle='--',
+#                      label="Add PK after loading (+4s)", color="none", edgecolor='gray', linewidth=1)
+print(rect_y_to_min_max)
+
+for bar in bar_pk:
+    bar.set_linestyle((0, (3, 3)))
 
 for bar in ax.patches:
     width = bar.get_width()
-    x = width / 2
-    ax.text(x, bar.get_y() + bar.get_height() / 2,
-            f'{width:.0f}s',
-            ha='center', va='center',
-            fontsize=10, color='black')
+    x, y = bar.xy
+    min_w, max_w = rect_y_to_min_max[y]
+    if width == max_w:
+        diff = (max_w - min_w)
+        diff_p = (diff / min_w) * 100
+        text_x = min_w + diff / 2
+        ax.text(text_x, bar.get_y() + bar.get_height() / 2,
+                f'+{diff_p:.0f}%',
+                ha='center', va='center',
+                fontsize=10, color='black',
+                bbox=dict(facecolor='skyblue', edgecolor='skyblue', boxstyle='round,pad=0.1')
+                )
+        ax.text(max_w + 1, bar.get_y() + bar.get_height() / 2,
+                f'{width:.0f}s',
+                ha='left', va='center',
+                fontsize=10, color='black',
+                bbox=dict(facecolor='white', edgecolor='white', boxstyle='round,pad=0.1'))
+    elif width == min_w:
+        text_x = width / 2
+        ax.text(text_x, bar.get_y() + bar.get_height() / 2,
+                f'{width:.0f}s',
+                ha='center', va='center',
+                fontsize=10, color='black')
 
-for bar, label in zip(ax.patches, elog['label']):
+for bar, label in zip(ax.patches, elog_pk['label']):
     width = bar.get_width()
-    ax.text(-35, bar.get_y() + bar.get_height() / 2,
+    ax.text(-16, bar.get_y() + bar.get_height() / 2,
             f'{label}',
             ha='center', va='center',
             fontsize=10, color='black')
 
 ax.set_ylabel('method', fontsize=14)
 ax.set_xlabel('loading time, s', fontsize=14)
-ax.get_legend().remove()
+ax.legend()
 ax.set_axisbelow(True)
 ax.tick_params(axis='y', colors='white')
 ax.set_title('Total loading time for 5 threads, 100k items/chunk, 10M rows', fontsize=14)

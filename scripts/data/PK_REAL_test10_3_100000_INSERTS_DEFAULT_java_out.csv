@@ -1,2 +1,2 @@
 start,end,table_type,reader_type,source_file,threads,batch_size,writer_type
-1726985363706,1726985610758,PK,test10,3,100000,REAL,INSERTS_DEFAULT
+1732214014564,1732214106085,PK,test10,3,100000,REAL,INSERTS_DEFAULT

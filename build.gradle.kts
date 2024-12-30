@@ -65,3 +65,7 @@ project.the<SourceSetContainer>()["main"].resources {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+springBoot {
+    mainClass = "pete.eremeykin.bulkinsert.BulkInsertApplication"
+}

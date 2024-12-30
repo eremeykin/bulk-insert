@@ -38,7 +38,8 @@ out/
 .vscode/
 
 ### Custom ###
-scripts/data/
+scripts/old_data/
+scripts/old_data/**
 *.png
 test
 test.csv
